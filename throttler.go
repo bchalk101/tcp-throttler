@@ -2,13 +2,15 @@ package throttler
 
 import (
 	"context"
+	"fmt"
 	"golang.org/x/time/rate"
 	"io"
 	"net"
 )
 
 type Throttler struct {
-	serverRateLimit     *rate.Limiter
+	serverRateLimit     rate.Limit
+	serverRateLimiter   *rate.Limiter
 	connectionRateLimit rate.Limit
 	connectionLimiter   map[net.Conn]*rate.Limiter
 }
@@ -21,14 +23,15 @@ func NewThrottler() Throttler {
 
 // Set server bandwidth limit in bytes per second
 func (t *Throttler) SetServerRateLimit(limit float64) {
-	if t.serverRateLimit != nil {
-		t.serverRateLimit.SetLimit(rate.Limit(limit))
-
+	t.serverRateLimit = rate.Limit(limit)
+	if t.serverRateLimiter != nil {
+		t.serverRateLimiter.SetLimit(t.serverRateLimit)
+		return
 	}
-	t.serverRateLimit = rate.NewLimiter(rate.Limit(limit), 1)
+	t.serverRateLimiter = rate.NewLimiter(t.serverRateLimit, 1)
 }
 
-// Set connection bandwidth limit in bytes per second
+// Set connection bandwidth limit in bytes per second, may be re-called during run time
 func (t *Throttler) SetConnectionRateLimit(limit float64) {
 	t.connectionRateLimit = rate.Limit(limit)
 	for _, connection := range t.connectionLimiter {
@@ -38,6 +41,9 @@ func (t *Throttler) SetConnectionRateLimit(limit float64) {
 
 // Main function for throttling connections, takes the connection and a reader as inputs. Throttle writes a byte at a time, sending as many bytes as allowed with in the second.
 func (t Throttler) Throttle(conn net.Conn, reader io.Reader) error {
+	if t.connectionRateLimit == 0 || t.serverRateLimit == 0 {
+		return fmt.Errorf("connection limit and server limit must be set before starting to throttle")
+	}
 	for {
 		err := t.waitRateLimit(conn)
 		if err != nil {
@@ -55,7 +61,7 @@ func (t Throttler) Throttle(conn net.Conn, reader io.Reader) error {
 }
 
 func (t Throttler) waitRateLimit(conn net.Conn) error {
-	err := t.serverRateLimit.Wait(context.TODO())
+	err := t.serverRateLimiter.Wait(context.TODO())
 	if err != nil {
 		return err
 	}
