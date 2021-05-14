@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func Test_Throttler(t *testing.T) {
+func Test_UnitThrottler(t *testing.T) {
 	t.Run("Should write a byte to response", func(t *testing.T) {
 		//Given
 		throttler := NewThrottler()

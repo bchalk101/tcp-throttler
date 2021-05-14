@@ -38,3 +38,7 @@ for {
 This package consists of both unit tests and an integration test. The unit tests focusing on a couple of the simpler functionality, however it does not test the actual limiting. 
 
 The integration tests the full functionality of the throttler, setting up a tcp server and monitoring as it accepts connections. These tests however are longer to run, with one running up to 30 seconds to verify that the throttler handles longer time frames.
+
+Running Unit Tests: `go test -run Unit .`
+
+Running Int Tests: `go test -run Int .`
