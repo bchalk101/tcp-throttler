@@ -39,7 +39,8 @@ func (t *Throttler) SetConnectionRateLimit(limit float64) {
 	}
 }
 
-// Main function for throttling connections, takes the connection and a reader as inputs. Throttle writes a byte at a time, sending as many bytes as allowed with in the second.
+// Main function for throttling connections, takes the connection and a reader as inputs.
+// Throttle writes a byte at a time, sending as many bytes as allowed with in the second.
 func (t Throttler) Throttle(conn net.Conn, reader io.Reader) error {
 	if t.connectionRateLimit == 0 || t.serverRateLimit == 0 {
 		return fmt.Errorf("connection limit and server limit must be set before starting to throttle")
